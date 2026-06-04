@@ -1,0 +1,35 @@
+name: Run ATMB Filter (Dual Keys Safe Mode)
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  run-project:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust Nightly
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: cargo
+
+    - name: Run ATMB Scraper
+      env:
+        CRENDENTIALS: ${{ secrets.CRENDENTIALS }}
+      # 【保险一】：即使地址超过 2000 个导致额度耗尽报错，也强制允许 workflow 继续向下走
+      continue-on-error: true 
+      run: cargo run --release
+
+    - name: Upload Result
+      # 【保险二】：always() 意味着无论上一步是完美成功（绿色），还是超限报错（黄色/红色），都必须无条件执行导出
+      if: always() 
+      uses: actions/upload-artifact@v4
+      with:
+        name: atmb-dual-key-result
+        path: result/mailboxes.csv
