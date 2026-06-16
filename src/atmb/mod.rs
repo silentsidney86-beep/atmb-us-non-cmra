@@ -121,7 +121,7 @@ impl ATMBCrawl {
                     })
             }
         })
-            .buffer_unordered(10)
+            .buffer_unordered(2)
             .collect::<Vec<_>>()
             .await;
 
@@ -139,7 +139,6 @@ if !err_list.is_empty() {
 
 Ok(suc_list)
         }
-    }
 
     async fn fetch_state_pages(&self, country_page: &CountryPage<'_>) -> color_eyre::Result<Vec<StatePage>> {
         let total_states = country_page.states.len();
