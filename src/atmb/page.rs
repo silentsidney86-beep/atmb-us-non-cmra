@@ -185,30 +185,52 @@ pub struct LocationDetailPage {
 impl LocationDetailPage {
     pub fn parse_html(html: &str) -> color_eyre::Result<Self> {
         let document = Html::parse_document(html);
-        let address_container = document.select(&LOCATION_DETAIL_SELECTOR).next().ok_or_else;
-        let div_selector = Selector::parse("div").unwrap();
 
-        let lines = address_container.select(&div_selector)
+        let address_container = document
+            .select(&LOCATION_DETAIL_SELECTOR)
+            .next()
+            .ok_or_else(|| {
+                let preview = &html[..html.len().min(3000)];
+
+                eyre!(
+                    "LOCATION_DETAIL_SELECTOR not found. \
+                     Page structure may have changed.\n\nHTML Preview:\n{}",
+                    preview
+                )
+            })?;
+
+        let div_selector = Selector::parse("div")
+            .map_err(|e| eyre!("Failed to parse div selector: {:?}", e))?;
+
+        let lines = address_container
+            .select(&div_selector)
             .map(|div| div.text().collect::<String>())
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
 
+        if lines.len() < 2 {
+            bail!(
+                "Unexpected address structure. Parsed lines: {:?}",
+                lines
+            );
+        }
+
         let line2 = match lines.len() {
-            // no line2
             4 => None,
-            // one-line line2
             5 => Some(lines[2].to_string()),
-            // two-line line2
             6 => Some(format!("{} {}", lines[2], lines[3])),
             7 => None,
-            _ => bail!("Unexpected address line count: {}, page structure might be changed: {:?}", lines.len(), lines),
+            _ => bail!(
+                "Unexpected address line count: {}, page structure might be changed: {:?}",
+                lines.len(),
+                lines
+            ),
         };
-        Ok(
-            Self {
-                line1: lines[1].clone(),
-                line2,
-            }
-        )
+
+        Ok(Self {
+            line1: lines[1].clone(),
+            line2,
+        })
     }
 
     /// concatenate line1 and line2
@@ -220,7 +242,6 @@ impl LocationDetailPage {
         }
     }
 }
-
 impl TryInto<Address> for LocationHtmlInfo {
     type Error = color_eyre::eyre::Error;
 
