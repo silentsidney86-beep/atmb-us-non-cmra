@@ -183,10 +183,17 @@ pub struct LocationDetailPage {
 }
 
 impl LocationDetailPage {
-    pub fn parse_html(html: &str) -> color_eyre::Result<Self> {
-        let document = Html::parse_document(html);
+   pub fn parse_html(html: &str) -> color_eyre::Result<Self> {
 
-        let address_container = document
+    if html.contains("Your access to this site has been limited")
+        || html.contains("Wordfence")
+    {
+        bail!("Blocked by Wordfence");
+    }
+
+    let document = Html::parse_document(html);
+
+    let address_container = document
             .select(&LOCATION_DETAIL_SELECTOR)
             .next()
             .ok_or_else(|| {
