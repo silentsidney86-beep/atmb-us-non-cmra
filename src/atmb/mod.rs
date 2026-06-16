@@ -129,10 +129,15 @@ impl ATMBCrawl {
         let suc_list = suc_list.into_iter().filter_map(Result::ok).collect::<Vec<_>>();
         let err_list = err_list.into_iter().filter_map(Result::err).collect::<Vec<_>>();
 
-        if !err_list.is_empty() {
-            bail!("{:#?}", err_list);
-        } else {
-            Ok(suc_list)
+if !err_list.is_empty() {
+    log::warn!(
+        "{} mailbox detail pages failed, continuing with {} successful results",
+        err_list.len(),
+        suc_list.len()
+    );
+}
+
+Ok(suc_list)
         }
     }
 
